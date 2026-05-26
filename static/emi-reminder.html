@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EMI Reminder · FlexiLoans Voice Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-scenario="emi-reminder">
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>FlexiLoans · Voice Agent</span>
+    </div>
+    <nav>
+      <a href="/">← All demos</a>
+      <a href="/soft-collections">Soft Collections →</a>
+    </nav>
+  </header>
+
+  <main class="demo">
+    <aside class="sidebar">
+      <section class="card">
+        <h3>You are the customer</h3>
+        <div class="kv" id="customer-kv"></div>
+      </section>
+
+      <section class="card">
+        <h3>About this call</h3>
+        <p id="scenario-desc" style="margin:0; color:var(--muted); font-size:13.5px;"></p>
+      </section>
+
+      <section class="card">
+        <h3>Try saying</h3>
+        <ul class="hints" id="hints"></ul>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div class="stage-header">
+        <h1>📞 EMI Reminder Call</h1>
+        <div class="header-right">
+          <div class="usage-pill" id="usage-pill" title="Live LLM token usage + estimated cost">
+            <span class="usage-tokens">— tok</span>
+            <span class="usage-sep">·</span>
+            <span class="usage-cost">$0.0000</span>
+          </div>
+          <div class="status" id="status"><span class="pulse"></span><span id="status-text">Not connected</span></div>
+        </div>
+      </div>
+
+      <div class="transcript" id="transcript">
+        <div class="empty-hint">Click <b>Start Call</b> to receive the call.<br>Priya will greet you first.</div>
+      </div>
+
+      <div class="controls">
+        <button class="mic-btn" id="mic-btn" title="Auto-listening" disabled>🎙️</button>
+        <div class="mic-meta">
+          <div class="label" id="mic-label">Not in call</div>
+          <div class="hint" id="mic-hint">Click Start Call to begin.</div>
+        </div>
+        <div class="backend-picker">
+          <label class="backend-label">LLM</label>
+          <select id="backend-select" title="Choose the LLM for the live conversation"></select>
+        </div>
+        <button class="btn-secondary" id="start-btn">Start Call</button>
+        <button class="btn-danger" id="end-btn" disabled>End Call</button>
+      </div>
+
+      <div id="outcome-container"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

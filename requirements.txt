@@ -1,0 +1,28 @@
+# Web server
+fastapi>=0.118
+uvicorn[standard]==0.32.1
+python-multipart==0.0.17
+websockets==13.1
+
+# STT
+faster-whisper==1.1.0
+silero-vad==5.1.2
+
+# LLM backends
+ollama==0.4.4              # local fallback (qwen2.5)
+claude-agent-sdk>=1.0      # default: Claude Sonnet via local Claude Code CLI
+
+# TTS - Kokoro (high-quality, fast English TTS, 82M params)
+kokoro>=0.9.4
+soundfile==0.12.1
+numpy<2.0
+
+# Audio utilities
+scipy==1.14.1
+torch>=2.4.0
+torchaudio>=2.4.0
+
+# Utils
+pydantic==2.10.3
+python-dotenv==1.0.1
+tzdata==2024.2  ; sys_platform == "win32"

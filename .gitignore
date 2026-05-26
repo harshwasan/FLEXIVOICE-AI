@@ -1,0 +1,42 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.so
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+
+# ---- Secrets and local config ----
+.env
+.env.*
+!.env.example
+
+# ---- Local TLS dev certs (regen with scripts/make_cert.py) ----
+certs/
+*.crt
+*.key
+*.pem
+
+# ---- Local model snapshots (download with scripts/download_models.py) ----
+models/
+
+# ---- Session logs (may contain PII) ----
+logs/
+
+# ---- Build / temp ----
+build/
+dist/
+*.log
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Editor / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

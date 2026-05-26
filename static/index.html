@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlexiLoans Voice Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>FlexiLoans · Voice Agent</span>
+    </div>
+    <nav>
+      <a href="/" class="active">Demos</a>
+      <a href="https://github.com" target="_blank">Source</a>
+    </nav>
+  </header>
+
+  <main class="landing">
+    <h1>Conversational voice agents for lending</h1>
+    <p class="sub">
+      Two fully-local voice demos. Press the mic, talk to Priya from FlexiLoans,
+      hear her back. Whisper (STT) + Qwen (LLM) + Kokoro (TTS) — all on your GPU.
+      No telephony, no cloud, no API keys.
+    </p>
+
+    <div class="demo-grid">
+      <a class="demo-card reminder" href="/emi-reminder">
+        <div class="tag">Outbound · Pre-due</div>
+        <h2>EMI Reminder Call</h2>
+        <p>
+          Polite reminder 3 days before EMI due date. Confirm readiness,
+          offer auto-debit, capture commitment. Light-touch, friendly.
+        </p>
+        <span class="btn">Try the demo →</span>
+      </a>
+
+      <a class="demo-card collections" href="/soft-collections">
+        <div class="tag">Outbound · DPD-5 · RBI Compliant</div>
+        <h2>Soft Collections Call</h2>
+        <p>
+          5 days past due. Empathetic outreach with 3 restructuring options.
+          Strict RBI fair-practice guardrails — no threats, no shaming,
+          calls only 8 AM – 7 PM IST.
+        </p>
+        <span class="btn">Try the demo →</span>
+      </a>
+    </div>
+
+    <div class="stack-note">
+      <b>Local stack</b> — every component runs on your machine.
+      <b>STT</b>: faster-whisper distil-large-v3 ·
+      <b>LLM</b>: Ollama qwen2.5:7b-instruct (streaming) ·
+      <b>TTS</b>: Kokoro-82M.
+      Target end-to-end latency per turn: ~1.0–1.5 s on a 24 GB GPU.
+    </div>
+  </main>
+</body>
+</html>
