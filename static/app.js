@@ -63,7 +63,7 @@ let agentPlaybackQueue = [];
 let agentPlaying = false;
 let _agentDoneFlag = false;
 
-const state = { callActive: false };
+const state = { callActive: false, sessionId: null };
 
 // ---------- Persona card rendering ----------
 
@@ -225,6 +225,7 @@ function onMessage(ev) {
 
   switch (msg.type) {
     case "session":
+      state.sessionId = msg.session_id;
       console.log("session", msg.session_id);
       break;
 
@@ -524,12 +525,64 @@ function sentimentClass(s) {
   return "";
 }
 
+// Outcomes that operationally require human escalation.
+const ESCALATION_OUTCOMES = new Set([
+  "escalate", "refused", "dnd_requested", "call_incomplete",
+]);
+
+function buildActionRecommendation(o, violations) {
+  const outcome = o.outcome || "info_only";
+  const needsEscalation =
+    ESCALATION_OUTCOMES.has(outcome) || (violations && violations.length > 0);
+  let priority = "low";
+  if (outcome === "escalate" || outcome === "dnd_requested") priority = "critical";
+  else if (outcome === "refused" || (violations && violations.length > 0)) priority = "high";
+  else if (outcome === "partial_commitment" || outcome === "callback_requested") priority = "medium";
+
+  const queue =
+    outcome === "dnd_requested" ? "compliance_dnd"
+    : outcome === "escalate" ? "human_collections_supervisor"
+    : outcome === "refused" ? "field_collections"
+    : outcome === "callback_requested" ? "callback_scheduler"
+    : outcome === "commitment" ? "auto_followup"
+    : outcome === "partial_commitment" ? "restructuring_ops"
+    : "review_queue";
+
+  return {
+    escalation_required: needsEscalation,
+    priority,
+    assign_to_queue: queue,
+    suggested_next_action: o.next_action || null,
+    sla_hours:
+      priority === "critical" ? 2
+      : priority === "high" ? 8
+      : priority === "medium" ? 24
+      : 72,
+  };
+}
+
 function renderOutcome(msg) {
   const o = msg.data || {};
   const m = msg.metrics || {};
   const violations = msg.violations || [];
   const u = msg.usage || null;
   if (u) updateUsagePill(u);
+
+  // The fully structured analysis blob — what an operations team would actually consume.
+  const structured = {
+    session_id: state.sessionId || msg.session_id || null,
+    scenario: document.body.dataset.scenario,
+    timestamp_utc: new Date().toISOString(),
+    turns: msg.turns ?? null,
+    outcome: o,
+    action_recommendation: buildActionRecommendation(o, violations),
+    rbi_compliance: {
+      violations_count: violations.length,
+      violations: violations,
+    },
+    llm_usage: u || null,
+    latency_ms: m,
+  };
 
   const fmtMs = (x) => x ? `${Math.round(x)} <small>ms</small>` : "—";
 
@@ -571,8 +624,59 @@ function renderOutcome(msg) {
       ${metricCard("total_turn", "Total turn")}
     </div>
   `;
+
+  // Action recommendation strip (escalation banner)
+  const action = structured.action_recommendation;
+  const actionClass =
+    action.priority === "critical" ? "danger"
+    : action.priority === "high" ? "warn"
+    : action.priority === "medium" ? "warn"
+    : "success";
+  const actionStrip = document.createElement("div");
+  actionStrip.className = `action-strip ${actionClass}`;
+  actionStrip.innerHTML = `
+    <div class="action-row">
+      <span class="action-tag ${actionClass}">
+        ${action.escalation_required ? "⚠️ ESCALATE" : "✓ AUTO-HANDLE"}
+      </span>
+      <span class="action-priority">Priority: <b>${action.priority.toUpperCase()}</b></span>
+      <span class="action-queue">Queue: <code>${action.assign_to_queue}</code></span>
+      <span class="action-sla">SLA: <b>${action.sla_hours}h</b></span>
+    </div>
+  `;
+  card.appendChild(actionStrip);
+
+  // Raw JSON card (collapsible-ish, with copy button)
+  const jsonStr = JSON.stringify(structured, null, 2);
+  const jsonCard = document.createElement("section");
+  jsonCard.className = "card outcome-json";
+  jsonCard.innerHTML = `
+    <div class="json-header">
+      <h3>Structured analysis · JSON</h3>
+      <button class="btn-copy" type="button">Copy JSON</button>
+    </div>
+    <p class="json-hint">
+      This is what an operations API would consume — outcome, action recommendation
+      (queue + SLA), RBI compliance, LLM usage and per-stage latency in one blob.
+    </p>
+    <pre class="json-block"><code></code></pre>
+  `;
+  jsonCard.querySelector("code").textContent = jsonStr;
+  jsonCard.querySelector(".btn-copy").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(jsonStr);
+      btn.textContent = "✓ Copied";
+      setTimeout(() => { btn.textContent = "Copy JSON"; }, 1500);
+    } catch {
+      btn.textContent = "Copy failed";
+      setTimeout(() => { btn.textContent = "Copy JSON"; }, 1500);
+    }
+  });
+
   els.outcomeContainer.innerHTML = "";
   els.outcomeContainer.appendChild(card);
+  els.outcomeContainer.appendChild(jsonCard);
 }
 
 // ---------- Wire-up ----------
