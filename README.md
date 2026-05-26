@@ -244,6 +244,81 @@ Every substitution increments `session.guardrail_violations` and is logged. Zero
 
 ---
 
+## Pluggable upgrades — V2 drop-in modules
+
+Each module below is implemented behind a thin facade in `server/` so it can be swapped without touching the orchestrator. Concrete model picks are listed; everything is open-weight unless noted.
+
+### 1. Full call recording
+
+Today we persist a JSONL transcript per session in `logs/<session>.jsonl`. The audio frames already flow through one process — capturing them is a small extension:
+
+- **Dual-channel WAV** per call (`logs/<session>.wav`): customer mic on L (16 kHz PCM already on the wire), Kokoro TTS on R, mixed at the moment each chunk is emitted.
+- **Frame-accurate alignment** with the transcript JSON (turn boundaries are already timestamped server-side).
+- **RBI-aligned retention**: consent banner shown at call start; AES-256 at rest; configurable auto-purge (default 90 days); per-session signed URLs for QA review.
+- **Replay UI** generated straight from the JSONL + WAV — no extra DB.
+
+### 2. Customer tone / sentiment detection (live, paralinguistic)
+
+Today sentiment is inferred from the *transcript* at call end. V2 listens to the *audio* during the call so the LLM can adapt mid-turn:
+
+| Model | Why | Notes |
+|---|---|---|
+| **emotion2vec / emotion2vec+** (FunASR) | Open-weight SOTA on RAVDESS/IEMOCAP; ~120 M params | Runs on the same GPU as Whisper; ~50 ms per utterance. |
+| **`audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim`** | Continuous valence / arousal / dominance scores | Lets us drive prompts off a 3-D affect vector, not just labels. |
+| **`superb/wav2vec2-base-superb-er`** | 4-class (angry / happy / neutral / sad), 95 M params | Fastest fallback; <30 ms/clip. |
+| **Hume EVI** | Cloud, 48-emotion model | Only if a cloud dependency is acceptable. |
+
+Surfaced in the UI next to the existing usage pill: a small affect badge that ticks live, plus the running average that feeds into the outcome card.
+
+### 3. AI agent tone verification (self-audit loop)
+
+Closes the loop on the agent's *own* output — we don't just trust the LLM to *say* it's being empathetic, we *measure* it.
+
+- **Text-side guard**: a 30 M-param sentiment classifier (e.g. `cardiffnlp/twitter-roberta-base-sentiment`) scores every agent sentence *before* it hits Kokoro. Anything classified `negative` with high confidence is blocked the same way the RBI regex sanitiser blocks threats today, and logged as a `tone_violation`.
+- **Acoustic-side verifier**: the same emotion model used on the customer is run on Kokoro's synthesized output. If the realized acoustic affect doesn't match the LLM's stated intent (e.g. LLM said "I want to sound reassuring" but TTS came out flat / harsh), it's logged and surfaced in the outcome card.
+- **Outcome card additions**: `agent_avg_warmth`, `agent_max_negativity`, `tone_mismatch_events` — auditable per call, same as `guardrail_violations` today.
+
+### 4. Hindi & regional-language stack — true plug-and-play
+
+The English-only scope was a hackathon choice, not an architectural one. Every model facade (`stt.py`, `llm.py`, `tts.py`) takes a model id from env, so V2 is a config-flip plus a model pull.
+
+#### STT — Indic ASR
+
+| Model | Languages | VRAM | Plug-in path |
+|---|---|---|---|
+| **AI4Bharat IndicWhisper** | 12 Indic | ~3 GB | CT2-convert → drop into `models/` → set `WHISPER_MODEL`. Same `faster-whisper` runtime. |
+| **NVIDIA NeMo Indic Conformer-CTC** | Hi / Ta / Te / Bn / Mr / Gu | ~1 GB | Swap STT facade to `nemo.collections.asr`. Best WER on telecom audio in our quick A/B. |
+| **OpenAI Whisper-large-v3** (multilingual) | 99 incl. Hi / Ta / Bn | ~3 GB | Zero code change — just change `WHISPER_MODEL`. Good baseline if you can't fine-tune. |
+
+#### LLM — Indic instruction-tuned
+
+| Model | Languages | Backend | Plug-in path |
+|---|---|---|---|
+| **Sarvam-2B / Sarvam-1** | 10 Indic + English | Ollama (GGUF) | Already supported via our Ollama backend — single `ollama pull` and toggle in the UI dropdown. |
+| **Krutrim-7B** (Ola) | 22 Indian languages | Ollama (GGUF) | Same. Larger / heavier; better for nuanced collections dialogue. |
+| **AI4Bharat Airavata** | Hindi (Llama-7B base) | Ollama / vLLM | Best-in-class Hindi instruction-following; English degrades — use only for Hi-first scripts. |
+| **Qwen 2.5 14B / 32B** | Multilingual incl. Hi | Ollama | Highest quality if you have a 24 GB card free. Zero code change from our current Qwen path. |
+
+#### TTS — Indic voice synthesis
+
+| Model | Languages | VRAM | Plug-in path |
+|---|---|---|---|
+| **AI4Bharat IndicParler-TTS** | 21 Indian languages | ~1 GB | Same Parler runtime style as Kokoro; replace loader in `server/tts.py`. Voice prompt = text description. |
+| **IndicTTS (IIT-Madras / AI4Bharat)** | 12 Indic, FastPitch + HiFi-GAN | ~0.5 GB | Established baseline. Slightly more robotic than Parler but very fast. |
+| **Coqui XTTS v2** | 17 incl. Hi | ~2 GB | Voice cloning from a 6-second sample — useful for matching a specific brand voice ("Priya"). |
+| **Meta MMS-TTS** | 1 100+ incl. all Indic | <100 MB | Tiny footprint; lower quality but works on CPU as a fallback for edge devices. |
+
+#### Glue work to ship a Hindi demo
+
+1. Pick a stack — e.g. **IndicWhisper + Sarvam-2B + IndicParler-TTS** for fully-local Hi/En code-switched.
+2. Set `WHISPER_MODEL`, `OLLAMA_MODEL`, `TTS_MODEL` in `.env`.
+3. Add `language="hi"` to the Whisper call (already an env var in `stt.py`) and a Hindi system-prompt addition to `personas.py`.
+4. Translate the RBI guardrail regexes — the structure is unchanged, just the substitution strings need Hindi equivalents.
+
+No orchestrator, WebSocket, or UI change required.
+
+---
+
 ## Acknowledgements
 
 Built for the **FlexiLoans Mumbai Tech Week 2026** hackathon — Topic 9: *Voice Agent for Lending — Pick Your Use Case(s)*. All customer profiles in the demo dataset are synthetic.
