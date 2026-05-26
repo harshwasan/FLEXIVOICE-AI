@@ -78,6 +78,19 @@ Both backends share **one streaming interface** in `server/llm.py`. The choice i
 
 ---
 
+## Demo recordings
+
+Pre-recorded call walkthroughs are bundled at the repo root as **[`Demo Videos.zip`](./Demo%20Videos.zip)** (~98 MB, contains both clips):
+
+| File inside the zip | Backend | What it shows |
+|---|---|---|
+| `Emi Reminder Call-Qwen .mp4` | Qwen 2.5 (local) | EMI reminder happy path — fully on-device, ~1 s/turn. |
+| `Soft Collections Call Sample.mp4` | Claude Sonnet 4.5 | Soft-collections with restructuring offer + RBI guardrails. |
+
+Download directly: [`Demo Videos.zip`](https://github.com/harshwasan/FLEXIVOICE-AI/raw/main/Demo%20Videos.zip)
+
+---
+
 ## Architecture (one turn, end-to-end)
 
 ```
