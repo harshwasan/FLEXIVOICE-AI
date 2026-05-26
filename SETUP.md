@@ -18,7 +18,7 @@ The first `pull` is ~4.5 GB. The `run` smoke-tests it. Ctrl-D to exit.
 ## 2. Python env
 
 ```powershell
-cd d:\projects\FlexiLoans
+cd <your-clone-path>\FLEXIVOICE-AI
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip

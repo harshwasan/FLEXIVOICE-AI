@@ -16,7 +16,7 @@ A 3-minute presenter playbook. Stick to it under stage pressure; everything you'
 | Open one PowerShell window, leave it visible. | If anything misbehaves you can show the live server log. |
 | Set the system clock check: if it's between 7 PM and 8 AM IST, the soft-collections opening will mention being outside the RBI window — that's intentional and a great talking point. | Don't get caught off guard. |
 
-If you're on a hotspot or guest WiFi, double-check the URL works at `http://127.0.0.1:8002/` (localhost; HTTPS not needed). For LAN demos on another laptop use `http://172.31.99.69:8002/` and run `scripts/make_cert.py` first for browser-mic permission.
+If you're on a hotspot or guest WiFi, double-check the URL works at `http://127.0.0.1:8002/` (localhost; HTTPS not needed). For LAN demos on another laptop you'll need to (a) set `HOST=0.0.0.0` and restart, (b) run `scripts/make_cert.py` to generate a self-signed cert for browser-mic permission, then (c) point the other laptop at `https://<this-machine-LAN-ip>:8002/`.
 
 ---
 

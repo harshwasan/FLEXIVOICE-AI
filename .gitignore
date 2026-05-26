@@ -35,6 +35,21 @@ dist/
 .mypy_cache/
 .ruff_cache/
 
+# ---- Demo videos / large binaries ----
+# Anything over GitHub's 100 MB limit. Demo videos go on YouTube / Loom and
+# are linked from README.md / EMAIL.md, never committed to the repo.
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi
+*.wav
+*.mp3
+*.ogg
+Demo Videos/
+demos/
+*Sample*.mp4
+
 # ---- Editor / OS ----
 .idea/
 .vscode/
